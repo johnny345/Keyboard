@@ -66,6 +66,8 @@
       B: 493.88
     };
 
+    const activeNotes = new Map(); // Map of element => {oscillator, gainNode}
+
     function playNote(noteElement) {
       const noteName = noteElement.getAttribute('data-note');
       const now = audioContext.currentTime;
@@ -81,28 +83,44 @@
 
       oscillator.start();
 
-      // Fade out gain smoothly
-      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-
-      // Stop oscillator slightly after gain fades
-      oscillator.stop(now + 0.35);
-
+      activeNotes.set(noteElement, { oscillator, gainNode });
       noteElement.classList.add('active');
-
-      setTimeout(() => {
-        noteElement.classList.remove('active');
-      }, 350);
     }
 
-    // Handle both click and touchstart for mobile compatibility
+    function stopNote(noteElement) {
+      const now = audioContext.currentTime;
+      const active = activeNotes.get(noteElement);
+      if (active) {
+        active.gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        active.oscillator.stop(now + 0.35);
+        active.oscillator.disconnect();
+        active.gainNode.disconnect();
+        activeNotes.delete(noteElement);
+        noteElement.classList.remove('active');
+      }
+    }
+
     notes.forEach(note => {
-      note.addEventListener('mousedown', () => playNote(note));
+      note.addEventListener('mousedown', (e) => {
+        playNote(note);
+      });
+
       note.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // prevent duplicate mousedown
+        e.preventDefault();
         playNote(note);
       }, { passive: false });
+    });
+
+    // Global listeners to stop any active note on release
+    document.addEventListener('mouseup', () => {
+      activeNotes.forEach((_, note) => stopNote(note));
+    });
+
+    document.addEventListener('touchend', () => {
+      activeNotes.forEach((_, note) => stopNote(note));
     });
   </script>
 
 </body>
 </html>
+
