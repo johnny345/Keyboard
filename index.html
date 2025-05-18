@@ -1,0 +1,108 @@
+<!-- keyboard\index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Keyboard</title>
+  <style>
+    .keyboard {
+      display: flex;
+    }
+
+    .note {
+      flex: 1;
+      height: 100px;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: silver;
+      transition: background-color 0.2s ease;
+    }
+
+    .note.active[data-note="C"] { background-color: maroon; }
+    .note.active[data-note="D"] { background-color: teal; }
+    .note.active[data-note="E"] { background-color: purple; }
+    .note.active[data-note="F"] { background-color: fuchsia; }
+    .note.active[data-note="G"] { background-color: aqua; }
+    .note.active[data-note="A"] { background-color: lime; }
+    .note.active[data-note="B"] { background-color: yellow; }
+
+    div {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    p {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="keyboard">
+    <div class="note" data-note="C"><p>C</p></div>
+    <div class="note" data-note="D"><p>D</p></div>
+    <div class="note" data-note="E"><p>E</p></div>
+    <div class="note" data-note="F"><p>F</p></div>
+    <div class="note" data-note="G"><p>G</p></div>
+    <div class="note" data-note="A"><p>A</p></div>
+    <div class="note" data-note="B"><p>B</p></div>
+  </div>
+
+  <script>
+    const notes = document.querySelectorAll('.note');
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    const noteFrequencies = {
+      C: 261.63,
+      D: 293.66,
+      E: 329.63,
+      F: 349.23,
+      G: 392.00,
+      A: 440.00,
+      B: 493.88
+    };
+
+    function playNote(noteElement) {
+      const noteName = noteElement.getAttribute('data-note');
+      const now = audioContext.currentTime;
+
+      const oscillator = audioContext.createOscillator();
+      oscillator.frequency.setValueAtTime(noteFrequencies[noteName], now);
+
+      const gainNode = audioContext.createGain();
+      gainNode.gain.setValueAtTime(1, now);
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      oscillator.start();
+
+      // Fade out gain smoothly
+      gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+
+      // Stop oscillator slightly after gain fades
+      oscillator.stop(now + 0.35);
+
+      noteElement.classList.add('active');
+
+      setTimeout(() => {
+        noteElement.classList.remove('active');
+      }, 350);
+    }
+
+    // Handle both click and touchstart for mobile compatibility
+    notes.forEach(note => {
+      note.addEventListener('mousedown', () => playNote(note));
+      note.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // prevent duplicate mousedown
+        playNote(note);
+      }, { passive: false });
+    });
+  </script>
+
+</body>
+</html>
